@@ -1,0 +1,193 @@
+<h2>班级管理</h2>
+<hr>
+<div class="tab"> 
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>编号</th>
+      <th>班级名称</th>
+      <th>建班时间</th>
+      <th>班主任</th>
+    </tr>
+  </thead>
+  <tbody class="tab1">
+  </tbody>
+</table>
+</div>
+<div class="opts">
+  <a tabindex="0" class="btn btn-sm btn-danger" role="button" data-trigger="focus" data-toggle="popover" data-content="请选择要修改的学生且一次只能修改一个">修改</a>
+  <button class="btn btn-danger btn-sm">添加</button>
+  <a tabindex="0" class="btn btn-sm btn-danger" role="button" data-trigger="focus" data-toggle="popover" data-content="请选择要删除的学生">删除</a>
+</div>
+<!--修改功能的模态框-->
+  <div id="studentModal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">班级信息</h4>
+        </div>
+        <div class="modal-body">
+            <table>
+                <tbody class="tab2"> 
+                    <tr>
+                      <td>班级名称</td>
+                      <td>建班时间</td>
+                      <td>班主任</td>
+                    </tr>
+                    <tr>
+                      <input type="hidden" name="id">
+                      <td><input type="text" name="name"></td>
+                      <td><input type="text" name="createDate"></td>
+                      <td><input type="number" name="teacher_id"></td>
+                    </tr>
+                  </tbody>
+            </table>
+        </div>
+        <div class="modalshanchu-footer">
+          <button type="button" class="btn btn-primary" data-dismiss="modal">关闭</button>
+          <button type="button" class="btn btn-primary updBtn">保存信息</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+<script type="text/javascript">
+function loadData(){
+    //刷新页面个函数
+    $.getJSON('clazz/findAll',function(data){
+      data.forEach(function(item){
+        var createDate = item.createDate?item.createDate.slice(0,item.createDate.indexOf('T')):'';
+        var newTr = $('<tr>'
+          +'<td><input type="checkbox" value="'+item.id+'"></td>'
+          +'<td>'+item.name+'</td>'
+          +'<td>'+createDate+'</td>'
+          +'<td>'+item.teacher_id+'</td>'
+        +'</tr>');
+        $('tbody.tab1').append(newTr);
+      });
+    });
+}//结束刷新
+  //删除信息函数
+  function Delete(){ 
+    $('.opts a').eq(1).off();
+    $(".opts a").eq(1).on('click',function(){
+        //ajax
+       var ids = $('tbody.tab1 input:checkbox:checked').map(function(index,item){
+          //return item.value;
+          return $(item).val();
+        }).toArray();
+        if(ids.length>0){
+        $.ajax({
+          type: "POST",
+          url:"clazz/batchDelete",
+          data:JSON.stringify(ids),
+          contentType:"application/json",//http协议
+          success:function(data){
+            alert("成功删除了"+data.affectedRows+"条");
+             $('.navLeft li').eq(3).trigger('click'); 
+          }
+        })
+        }
+      else{
+          alert("请选择要删除的班级");
+        }
+    });
+      
+      
+  }//结束删除
+    //修改信息函数
+    function update(){
+    $('.updBtn').off();
+    $('.updBtn').on('click',function(){
+      var id = $('.tab2 input[name=id]').val();
+      var name = $('.tab2 input[name=name]').val();
+      var createDate = $('.tab2 input[name=createDate]').val();
+      var teacher_id = $('.tab2 input[name=teacher_id]').val();
+      var newClazz = {
+          id:id,
+          name:name,
+          createDate:createDate,
+          teacher_id:teacher_id
+        };
+      $.ajax('clazz/update',{
+        'data':newClazz,
+        'method':'POST',
+        'content-Type':'application/json',
+        success:function(data){
+          console.log(data);
+          alert("修改成功了");
+          $('.modal').modal('hide');
+          $('.navLeft li').eq(3).trigger('click');
+        }
+      })
+    });
+    //为修改按钮绑定事件
+    
+      
+      
+    $('.opts a').eq(0).off();
+    $('.opts a').eq(0).on('click',function(){
+          var ids = $('tbody.tab1 input:checkbox:checked').toArray().map(function(item){
+        return item.value;
+           });
+      if(ids.length==1){
+        var id = ids[0];
+        $.getJSON('clazz/findById?id='+id,function(data){
+          var createDate = data[0].createDate?data[0].createDate.slice(0,data[0].createDate.indexOf('T')):'';
+          $('.tab2 input[name=id]').val(data[0].id);
+          $('.tab2 input[name=name]').val(data[0].name);
+          $('.tab2 input[name=createDate]').val(createDate);
+          $('.tab2 input[name=teacher_id]').val(data[0].teacher_id);
+          //显示模态框
+          $('.modal').modal('show');
+        })
+      }
+      else{
+        alert("请选择要修改的班级且一次只能修改一个");
+      }
+    });
+    }//修改结束
+    //添加功能函数
+    function add(){
+      $(".opts button").eq(0).off();
+      $(".opts button").eq(0).on('click',function(){
+        //显示模态框
+        $('#studentModal').modal('show');
+        $('.updBtn').off();
+        $('.updBtn').on('click',function(){
+         var name = $('.tab2 input[name=name]').val();
+         var createDate = $('.tab2 input[name=createDate]').val();
+         var teacher_id = $('.tab2 input[name=teacher_id]').val();
+        var clazz = {
+          name:name,
+          createDate:createDate,
+          teacher_id:teacher_id
+        };
+        console.log(clazz);
+           $.ajax('clazz/save',{
+              'data':clazz,
+              'method':'POST',
+              'content-Type':'application/json',
+               success:function(data){
+                console.log(data);
+                alert("添加成功了");
+                $('.modal').modal('hide');
+                $('.navLeft li').eq(3).trigger('click');
+              }
+            })
+        });
+      });
+    }//添加结束
+  $(function(){
+    loadData();
+    //确认修改
+    update();
+    //修改结束
+    //删除功能
+    Delete();
+    //删除结束
+          //添加功能
+    add();
+      //添加功能结束
+  })//
+</script>
